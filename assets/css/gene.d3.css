@@ -1,0 +1,20 @@
+
+.ibo-gene .utr { fill: #2d8fc1; stroke: #2d8fc1; }
+.ibo-gene .cds { fill: #2d8fc1; stroke: #2d8fc1; }
+.ibo-gene .reference { stroke: rgb(150,150,150); }
+.ibo-gene .name { font-size: 10px; fill: rgb(120,120,120); }
+.ibo-gene .arrow { stroke: rgb(150,150,150); fill: none; }
+.ibo-gene .axis path, .ibo-gene .axis line { fill: none; stroke: #000; shape-rendering: crispEdges; }
+.ibo-gene .axis { font-size: 11px; }
+.ibo-gene .tooltip {   
+  position: absolute;           
+  text-align: center;           
+  z-index:20;
+  color:white;
+  padding: 4px 6px 4px 6px;             
+  font: 11px arial;        
+  background: rgb(80,80,80);   
+  border: 0px;      
+  border-radius: 4px;           
+  pointer-events: none;         
+}

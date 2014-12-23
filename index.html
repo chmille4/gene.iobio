@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>gene.iobio</title>
+	<!-- libraries -->
+	<script src="assets/js/jquery.1.11.1.min.js"></script>
+	<script src="assets/js/jquery-ui.min.js"></script>
+	<script src="assets/js/handlebars-v2.0.0.min.js"></script>	
+	<script src="assets/js/typeahead.bundle.min.js"></script>		
+	<script src="assets/js/d3.min.js"></script>	
+	<script src="assets/js/gene.d3.js"></script>		
+
+	<!-- fonts -->
+	<link href='http://fonts.googleapis.com/css?family=Quicksand:300,400' rel='stylesheet' type='text/css'>
+	<link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+
+	<!-- css -->
+	<link rel="stylesheet" href="assets/css/jquery-ui.css" />	
+	<link rel="stylesheet" href="assets/css/site.css" />
+	<link rel="stylesheet" href="assets/css/gene.d3.css" />
+
+	<script>
+		$(document).ready(function(){
+			$('#bloodhound .typeahead').focus();
+		})
+	</script>
+
+	<script id='gene-title-template' type="text/x-handlebars-template">		
+		<div id="title">
+			<span class="col1">{{gene_name}}</span>
+			<span class="col2">{{gene_id}}</span>
+			<span style="float:right">
+			<span class="col1">{{chr}}</span>
+			<span class="col2">{{start}}-{{end}}</span>												
+		</div>
+		<div class='details'>
+			<div><span class="col1">Type:</span><span class="col2">{{feature_type}}</div>
+			<div><span class="col1">Status:</span><span class="col2">{{gene_status}}</div>
+		</div>
+	</script>
+	<script id='gene-details-template' type="text/x-handlebars-template">		
+		<div class="details">							
+			{{#each transcripts}}					
+		    	<div><span class="col1">Transcript:</span><span class='col2'>{{this.transcript_id}}</span></div>
+		    	{{#each this.features}}
+		    		<div style="margin-left:20px">
+		    			<span class="col1">{{this.feature_type}}</span>
+		    			<span class="col1">{{this.chr}}</span>
+		    			<span class="col2">{{this.start}}-{{this.end}}</span>	
+		    		</div>
+		    	{{/each}}	
+			{{/each}}
+		</div>		
+	</script>
+</head>
+<body>
+	<div id="container">
+		<h1>gene.iobio</h1>
+		<div id="bloodhound">
+		  <input class="typeahead" type="text" placeholder="Search By Gene Name or Region (chr2:3000000-3000010)">
+		</div>
+		<div id='title-results' class='results'></div>		
+		<div id="gene-viz"></div>
+		<div id='details-results' class='results'></div>		
+	</div>	
+
+	<script type="text/javascript">	
+		// viz
+		var gene_viz =  geneD3()
+	        .width(1000)
+	        .height(400);
+
+		// handlebar template
+		var geneTitleTemplate = Handlebars.compile($('#gene-title-template').html());	
+		var geneDetailsTemplate = Handlebars.compile($('#gene-details-template').html());	
+
+		// constructs the suggestion engine
+		var gene_engine = new Bloodhound({
+		  datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+		  queryTokenizer: Bloodhound.tokenizers.whitespace,
+		  local: [],
+		  limit: 10
+		});
+		 
+		// kicks off the loading/processing of `local` and `prefetch`
+		gene_engine.initialize();
+		 
+		var typeahead = $('#bloodhound .typeahead').typeahead({
+		  hint: true,
+		  highlight: true,
+		  minLength: 1
+		},
+		{
+		  name: 'name',
+		  displayKey: 'name',
+		  templates: {
+		    empty: [
+		      '<div class="empty-message">',
+		      'no genes match the current query',
+		      '</div>'
+		    ].join('\n'),
+		    suggestion: Handlebars.compile('<p><strong>{{name}}</strong></p>')
+		  },
+		  // `ttAdapter` wraps the suggestion engine in an adapter that
+		  // is compatible with the typeahead jQuery plugin
+		  source: gene_engine.ttAdapter()
+		});
+
+		// Attach initialized event to it
+		$('.typeahead').on('keyup', function(event) {
+			if (event.keyCode == 13) {
+				var val = $(this).typeahead('val').toUpperCase();
+				$(this).typeahead('close');
+				$(this).trigger('typeahead:selected', {"name": val});				
+			}				
+
+		})
+		typeahead.on('typeahead:selected',function(evt,data){
+			if (data.name.indexOf(':') != -1) var searchType = 'region';
+			else var searchType = 'gene'
+		    $.ajax({
+			  url: 'api/' + searchType + '/' + data.name,			  
+			  complete: function(res) {				  		  	
+			  	$('#title-results').html(geneTitleTemplate(res.responseJSON[0]));
+			  	$('#details-results').html(geneDetailsTemplate(res.responseJSON[0]));			  	
+			  	var selection = d3.select("#gene-viz").datum(res.responseJSON[0]['transcripts']);    
+                gene_viz(selection);
+			  }
+			})
+		});	
+
+		// check if gene_list is stored locally	
+		var gene_list = localStorage.getItem("gene_list");
+		if ( gene_list === null ) {
+			// fetch gene list from server			
+			$.ajax({url: 'gene_names.json'}).done(function(data, status, res) {
+				gene_engine.add($.map(data, function(gene) { return { name: gene }; }));
+				localStorage.setItem('gene_list', JSON.stringify(data));
+			})
+		} else {
+			// grab gene list from localStorage			
+			gene_engine.add(
+				$.map(JSON.parse(gene_list), function(gene) { return { name: gene }; })
+			);
+		}					
+    
+
+	</script>	
+
+</body>
+</html>
