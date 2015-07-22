@@ -16,20 +16,32 @@ app.get('/:toSearch', function (req, res) {
 })
 
 app.get('/api/gene/:gene', function (req, res) {  
-  db.all("SELECT * from genes where gene_name=\""+req.params.gene.toUpperCase()+"\"",function(err,rows){ 
-    var gene_data = rows[0]           
-    var transcript_ids = JSON.parse(gene_data['transcripts']);
+  db.all("SELECT * from genes where gene_name=\""+req.params.gene+"\"",function(err,rows){ 
+    var gene_data = {};
+    var transcript_ids = [];
+    if (rows != null && rows.length > 0) {
+      gene_data = rows[0];           
+      transcript_ids = JSON.parse(gene_data['transcripts']);
+    } 
         
     async.map(transcript_ids,      
       function(id, done){                
-        db.all("SELECT * from transcripts where transcript_id=\""+id+"\"",function(err,rows){          
-          rows[0]['features'] = JSON.parse(rows[0]['features']);
+        db.all("SELECT * from transcripts where transcript_id=\""+id+"\"",function(err,rows){    
+          if (rows != null && rows.length > 0) {
+            rows[0]['features'] = JSON.parse(rows[0]['features']);
+          } else {
+            rows[0]['features'] = [];
+          }     
           done(null,rows[0]);
         });
       },      
       function(err, results){        
         gene_data['transcripts'] = results;
-        res.json([gene_data]);
+        //res.json([gene_data]);
+
+        res.header('Content-Type', 'application/json');
+        res.header('Charset', 'utf-8')
+        res.send(req.query.callback + '(' + JSON.stringify([gene_data]) +');');
       }
     );
   });
