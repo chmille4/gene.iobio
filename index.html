@@ -65,6 +65,8 @@
 	</div>	
 
 	<script type="text/javascript">	
+		var geneiobio_server = "http://localhost:3000/";
+
 		// viz
 		var gene_viz =  geneD3()
 	        .width(1000)
@@ -117,16 +119,30 @@
 		})
 		typeahead.on('typeahead:selected',function(evt,data){
 			if (data.name.indexOf(':') != -1) var searchType = 'region';
-			else var searchType = 'gene'
-		    $.ajax({
-			  url: 'api/' + searchType + '/' + data.name,			  
-			  complete: function(res) {				  		  	
-			  	$('#title-results').html(geneTitleTemplate(res.responseJSON[0]));
-			  	$('#details-results').html(geneDetailsTemplate(res.responseJSON[0]));			  	
-			  	var selection = d3.select("#gene-viz").datum(res.responseJSON[0]['transcripts']);    
-                gene_viz(selection);
-			  }
-			})
+			else var searchType = 'gene';
+			var url = geneiobio_server + 'api/' + searchType + '/' + data.name;
+
+			
+			$.ajax({
+			    url: url,
+			    jsonp: "callback",
+			    type: "GET",
+			    dataType: "jsonp",
+			    success: function( response ) {
+			        $('#title-results').html(geneTitleTemplate(response[0]));
+			  		//$('#details-results').html(geneDetailsTemplate(response[0]));			  	
+			  		var selection = d3.select("#gene-viz").datum(response[0]['transcripts']);    
+               		gene_viz(selection);
+			    },
+			    error: function( xhr, status, errorThrown ) {
+			        
+			        console.log( "Error: " + errorThrown );
+			        console.log( "Status: " + status );
+			        console.dir( xhr );
+			    },
+			    complete: function( xhr, status ) {
+			    }
+			});
 		});	
 
 		// check if gene_list is stored locally	
