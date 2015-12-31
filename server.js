@@ -16,7 +16,7 @@ app.get('/:toSearch', function (req, res) {
 })
 
 app.get('/api/gene/:gene', function (req, res) {  
-  var source = req.params.'source';
+  var source = req.query.source;
   if (source == null || source == '') {
     source = 'gencode';
   } 
@@ -34,7 +34,7 @@ app.get('/api/gene/:gene', function (req, res) {
         
     async.map(transcript_ids,      
       function(id, done){      
-        var source = req.param('source'); 
+        var source = req.query.source); 
         if (source == null || source == '') {
           source = 'gencode';
         } 
@@ -74,7 +74,7 @@ app.get('/api/region/:region', function (req, res) {
   var chr = req.params.region.split(':')[0].toLowerCase();
   var start = req.params.region.split(':')[1].split('-')[0];
   var end = req.params.region.split(':')[1].split('-')[1];
-  var source = req.param('source'); 
+  var source = req.query.source; 
   if (source == null || source == '') {
     source = 'gencode';
   } 
