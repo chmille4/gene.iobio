@@ -27,8 +27,10 @@ app.get('/api/gene/:gene', function (req, res) {
     var transcript_ids = [];
     if (rows != null && rows.length > 0) {
       for (var i = 0; i < rows.length; i++) {
-        gene_data = rows[i];           
-        transcript_ids = transcript_ids.concat(JSON.parse(gene_data['transcripts']));
+        gene_data = rows[i];    
+        if (gene_data.hasOwnProperty("transcripts") && gene_data.transcripts != null && gene_data.transcripts != "") {
+          transcript_ids = transcript_ids.concat(JSON.parse(gene_data['transcripts']));
+        }       
       }
     } 
         
