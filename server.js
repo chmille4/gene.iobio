@@ -17,12 +17,20 @@ app.get('/:toSearch', function (req, res) {
 
 app.get('/api/gene/:gene', function (req, res) {  
   var source = req.query.source;
+  var species = req.query.species;
+  var build = req.query.build;
   if (source == null || source == '') {
     source = 'gencode';
   } 
-  var sqlString = "SELECT * from genes where gene_name=\""+req.params.gene+"\" ";
-  sqlString    += "AND source = \""+source+"\"";
-  db.all(sqlString,function(err,rows){ 
+  var geneSqlString = "SELECT * from genes where gene_name=\""+req.params.gene+"\" ";
+  geneSqlString    += " AND source = \""+source+"\"";
+  if (species != null && species != "") {
+    geneSqlString  += " AND species = \""+species+"\"";
+  }
+  if (build != null && build != "") {
+    geneSqlString  += " AND build = \""+build+"\"";
+  }
+  db.all(geneSqlString,function(err,rows){ 
     var gene_data = {};
     var transcript_ids = [];
     if (rows != null && rows.length > 0) {
@@ -36,7 +44,7 @@ app.get('/api/gene/:gene', function (req, res) {
         
     async.map(transcript_ids,      
       function(id, done){      
-        var source = req.query.source); 
+        var source = req.query.source; 
         if (source == null || source == '') {
           source = 'gencode';
         } 
@@ -50,6 +58,12 @@ app.get('/api/gene/:gene', function (req, res) {
         }
         sqlString +=    "WHERE t.transcript_id=\""+id+"\" "
         sqlString +=    "AND t.source = \""+source+"\"";
+        if (species != null && species != "") {
+          sqlString  += " AND t.species = \""+species+"\"";
+        }
+        if (build != null && build != "") {
+          sqlString  += " AND t.build = \""+build+"\"";
+        }        
         db.all(sqlString,function(err,rows){    
           if (rows != null && rows.length > 0) {
             rows[0]['features'] = JSON.parse(rows[0]['features']);
@@ -77,13 +91,21 @@ app.get('/api/region/:region', function (req, res) {
   var start = req.params.region.split(':')[1].split('-')[0];
   var end = req.params.region.split(':')[1].split('-')[1];
   var source = req.query.source; 
+  var species = req.query.species;
+  var build = req.query.build;
   if (source == null || source == '') {
     source = 'gencode';
   } 
-  
-  db.all("SELECT * from genes where chr = '" + chr + 
-    "' and  (start between " + start + " and " + end + 
-      " or end between " + start + " and " + end + ")", function(err, genes) {  
+  var sqlString = "SELECT * from genes where chr = '" + chr 
+    + "' and  (start between " + start + " and " + end 
+    + "        or end between " + start + " and " + end + ")";
+  if (species != null && species != "") {
+    sqlString  += " AND species = \""+species+"\"";
+  }
+  if (build != null && build != "") {
+    sqlString  += " AND build = \""+build+"\"";
+  }  
+  db.all(sqlString, function(err, genes) {  
     
     async.map(genes, 
       function(gene_data, outterDone) {                   
@@ -98,8 +120,13 @@ app.get('/api/region/:region', function (req, res) {
               sqlString +=    "LEFT OUTER JOIN xref_transcript x on x.refseq_id = t.transcript_id ";
             }
             sqlString +=    "WHERE t.transcript_id=\""+id+"\" "
-            sqlString +=    "AND source = \""+source+"\"";          
-      
+            sqlString +=    "AND t.source = \""+source+"\"";          
+            if (species != null && species != "") {
+              sqlString  += " AND t.species = \""+species+"\"";
+            }
+            if (build != null && build != "") {
+              sqlString  += " AND t.build = \""+build+"\"";
+            }  
             db.all(sqlString,function(err,rows){          
               rows[0]['features'] = JSON.parse(rows[0]['features']);
               done(null,rows[0]);
