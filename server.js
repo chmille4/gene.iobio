@@ -30,7 +30,10 @@ app.get('/api/gene/:gene', function (req, res) {
   if (build != null && build != "") {
     geneSqlString  += " AND build = \""+build+"\"";
   }
+  console.log("getting gene");
+
   db.all(geneSqlString,function(err,rows){ 
+    console.log("gene done")
     var gene_data = {};
     var transcript_ids = [];
     if (rows != null && rows.length > 0) {
@@ -41,7 +44,39 @@ app.get('/api/gene/:gene', function (req, res) {
         }       
       }
     } 
-        
+
+    var sqlString  = "SELECT t.* from transcripts t ";
+    var sqlString  = "SELECT t.*, x.refseq_id as 'xref' from transcripts t ";
+    sqlString     += "LEFT OUTER JOIN xref_transcript x on x.gencode_id = t.transcript_id ";
+    sqlString     += "WHERE t.gene_name=\""+req.params.gene+"\" "
+    sqlString     += "AND t.source = \""+source+"\"";
+    if (species != null && species != "") {
+      sqlString  += " AND t.species = \""+species+"\"";
+    }
+    if (build != null && build != "") {
+      sqlString  += " AND t.build = \""+build+"\"";
+    }            
+
+    console.log("getting transcripts");
+    db.all(sqlString,function(err,transcriptRows){ 
+      console.log("transcripts returned");
+      var transcripts = [];
+      var transcript = {};
+      if (transcriptRows != null && transcriptRows.length > 0) {
+        for (var i = 0; i < transcriptRows.length; i++) {
+          transcript = transcriptRows[i];    
+          transcript['features'] = JSON.parse(transcript['features']);
+          transcripts.push(transcript);
+        }
+      }
+      gene_data["transcripts"] = transcripts;
+
+      res.header('Content-Type', 'application/json');
+      res.header('Charset', 'utf-8')
+      res.send(req.query.callback + '(' + JSON.stringify([gene_data]) +');');
+    });
+       
+       /* 
     async.map(transcript_ids,      
       function(id, done){      
         var source = req.query.source; 
@@ -83,6 +118,7 @@ app.get('/api/gene/:gene', function (req, res) {
         res.send(req.query.callback + '(' + JSON.stringify([gene_data]) +');');
       }
     );
+      */
   });
 });
 
