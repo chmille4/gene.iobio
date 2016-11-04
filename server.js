@@ -30,10 +30,8 @@ app.get('/api/gene/:gene', function (req, res) {
   if (build != null && build != "") {
     geneSqlString  += " AND build = \""+build+"\"";
   }
-  console.log("getting gene");
 
   db.all(geneSqlString,function(err,rows){ 
-    console.log("gene done")
     var gene_data = {};
     var transcript_ids = [];
     if (rows != null && rows.length > 0) {
@@ -57,9 +55,7 @@ app.get('/api/gene/:gene', function (req, res) {
       sqlString  += " AND t.build = \""+build+"\"";
     }            
 
-    console.log("getting transcripts");
     db.all(sqlString,function(err,transcriptRows){ 
-      console.log("transcripts returned");
       var transcripts = [];
       var transcript = {};
       if (transcriptRows != null && transcriptRows.length > 0) {
@@ -75,50 +71,6 @@ app.get('/api/gene/:gene', function (req, res) {
       res.header('Charset', 'utf-8')
       res.send(req.query.callback + '(' + JSON.stringify([gene_data]) +');');
     });
-       
-       /* 
-    async.map(transcript_ids,      
-      function(id, done){      
-        var source = req.query.source; 
-        if (source == null || source == '') {
-          source = 'gencode';
-        } 
-        var sqlString = "";
-        if (source == 'gencode') {
-          sqlString =  "SELECT t.*, x.refseq_id as 'xref' from transcripts t ";
-          sqlString += "LEFT OUTER JOIN xref_transcript x on x.gencode_id = t.transcript_id ";
-        } else if (source == 'refseq') {
-          sqlString =  "SELECT t.*, x.gencode_id as 'xref' from transcripts t ";
-          sqlString += "LEFT OUTER JOIN xref_transcript x on x.refseq_id = t.transcript_id ";
-        }
-        sqlString +=    "WHERE t.transcript_id=\""+id+"\" "
-        sqlString +=    "AND t.source = \""+source+"\"";
-        if (species != null && species != "") {
-          sqlString  += " AND t.species = \""+species+"\"";
-        }
-        if (build != null && build != "") {
-          sqlString  += " AND t.build = \""+build+"\"";
-        }        
-        db.all(sqlString,function(err,rows){    
-          if (rows != null && rows.length > 0) {
-            rows[0]['features'] = JSON.parse(rows[0]['features']);
-          } else {
-            rows[0]['features'] = [];
-          }   
-          done(null,rows[0]);
-        });
-
-      },      
-      function(err, results){        
-        gene_data['transcripts'] = results;
-        //res.json([gene_data]);
-
-        res.header('Content-Type', 'application/json');
-        res.header('Charset', 'utf-8')
-        res.send(req.query.callback + '(' + JSON.stringify([gene_data]) +');');
-      }
-    );
-      */
   });
 });
 
@@ -135,6 +87,7 @@ app.get('/api/region/:region', function (req, res) {
   var sqlString = "SELECT * from genes where chr = '" + chr 
     + "' and  (start between " + start + " and " + end 
     + "        or end between " + start + " and " + end + ")";
+  sqlString     += "AND source = \""+source+"\"";
   if (species != null && species != "") {
     sqlString  += " AND species = \""+species+"\"";
   }
