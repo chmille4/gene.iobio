@@ -22,7 +22,7 @@ app.get('/api/gene/:gene', function (req, res) {
   if (source == null || source == '') {
     source = 'gencode';
   } 
-  var geneSqlString = "SELECT * from genes where gene_name=\""+req.params.gene+"\" ";
+  var geneSqlString = "SELECT * from genes where gene_name like \""+req.params.gene+"\" ";
   geneSqlString    += " AND source = \""+source+"\"";
   if (species != null && species != "") {
     geneSqlString  += " AND species = \""+species+"\"";
